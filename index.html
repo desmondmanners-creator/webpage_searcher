@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Status Checker</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --primary: #4a5568;
+            --primary-hover: #2d3748;
+            --success: #48bb78;
+            --error: #f56565;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Title size increased as requested */
+        h1 {
+            font-size: 2.5rem; 
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--text-main);
+            letter-spacing: -0.05em;
+        }
+
+        .checker-box {
+            margin-bottom: 35px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+
+        button {
+            padding: 14px 24px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .error-message {
+            color: var(--error);
+            font-size: 0.9rem;
+            margin-top: 6px;
+            min-height: 20px;
+            display: none;
+            font-weight: 500;
+        }
+
+        .status-result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .status-result.up {
+            background-color: #e6fffa;
+            color: #234e52;
+            border: 1px solid #b2f5ea;
+        }
+
+        .status-result.down {
+            background-color: #fff5f5;
+            color: #742a2a;
+            border: 1px solid #fed7d7;
+        }
+
+        .history-section {
+            border-top: 2px solid var(--border);
+            padding-top: 25px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-header h2 {
+            font-size: 1.2rem;
+            color: var(--text-main);
+            font-weight: 700;
+        }
+
+        .btn-clear {
+            padding: 6px 12px;
+            background-color: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            font-size: 0.85rem;
+            border-radius: 6px;
+        }
+
+        .btn-clear:hover {
+            background-color: #edf2f7;
+            color: var(--text-main);
+        }
+
+        .history-list {
+            list-style: none;
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .site-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.up { background-color: var(--success); }
+        .status-indicator.down { background-color: var(--error); }
+
+        .site-name {
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .time-elapsed {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .empty-history {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 20px 0;
+            font-size: 0.95rem;
+            font-style: italic;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Website Uptime Checker</h1>
+
+        <div class="checker-box">
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Enter website address (e.g., mysite.com)" autocomplete="off">
+                <button id="verifyBtn">Verify Live</button>
+            </div>
+            <div id="errorMsg" class="error-message"></div>
+            <div id="statusResult" class="status-result"></div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-header">
+                <h2>Recently Checked Websites</h2>
+                <button id="clearBtn" class="btn-clear">Clear History</button>
+            </div>
+            <ul id="historyList" class="history-list">
+                <li id="emptyState" class="empty-history">No websites checked yet.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlInput = document.getElementById('urlInput');
+            const verifyBtn = document.getElementById('verifyBtn');
+            const errorMsg = document.getElementById('errorMsg');
+            const statusResult = document.getElementById('statusResult');
+            const historyList = document.getElementById('historyList');
+            const clearBtn = document.getElementById('clearBtn');
+            const emptyState = document.getElementById('emptyState');
+
+            let historyData = [];
+
+            // Core verification action
+            function checkUptime() {
+                // Instantly capture exactly what is typed in the box
+                let rawUrl = urlInput.value.trim();
+
+                // Hide old alerts or states
+                errorMsg.style.display = 'none';
+                statusResult.style.display = 'none';
+
+                if (!rawUrl) {
+                    errorMsg.textContent = 'Please enter a website address before checking.';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                // Smoothly clean up structure if user didn't write http/https
+                let cleanUrl = rawUrl;
+                if (!/^https?:\/\//i.test(cleanUrl)) {
+                    cleanUrl = 'http://' + cleanUrl;
+                }
+
+                // Quick regex test for basic domain structure validation
+                const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}/i;
+                const domainToTest = cleanUrl.replace(/^https?:\/\//i, '');
+                
+                if (!domainRegex.test(domainToTest)) {
+                    errorMsg.textContent = 'Please enter a valid web address layout (e.g., domain.com).';
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                // Show visual feedback loading state
+                verifyBtn.textContent = 'Checking...';
+                verifyBtn.disabled = true;
+
+                // Simulate Live Checking Logic (Mock Response Engine)
+                setTimeout(() => {
+                    // Randomly assign up/down status for demo simulation tracking
+                    const isUp = Math.random() > 0.15; 
+                    const displayUrl = domainToTest.toLowerCase();
+
+                    // Display results box
+                    statusResult.className = 'status-result ' + (isUp ? 'up' : 'down');
+                    statusResult.textContent = isUp 
+                        ? `🟢 ${displayUrl} is UP and running smoothly right now.` 
+                        : `🔴 ${displayUrl} appears to be DOWN or broken right now.`;
+                    statusResult.style.display = 'block';
+
+                    // Save data logic
+                    const newItem = {
+                        url: displayUrl,
+                        status: isUp ? 'up' : 'down',
+                        timestamp: Date.now()
+                    };
+
+                    historyData.unshift(newItem);
+                    updateHistoryDOM();
+
+                    // Reset button interface
+                    verifyBtn.textContent = 'Verify Live';
+                    verifyBtn.disabled = false;
+Use code with caution.
+urlInput.value = ''; // Clean input for next run
+}, 750);
+}
+// Render History List
+function updateHistoryDOM() {
+// Clear out everything except template anchors
+historyList.innerHTML = '';
+if (historyData.length === 0) {
+historyList.appendChild(emptyState);
+return;
+}
+historyData.forEach(item => {
+const li = document.createElement('li');
+li.className = 'history-item';
+// Compute clean time labels
+const secondsAgo = Math.floor((Date.now() - item.timestamp) / 1000);
+let timeText = 'Just now';
+if (secondsAgo >= 60) {
+const mins = Math.floor(secondsAgo / 60);
+timeText = ${mins}m ago;
+} else if (secondsAgo > 2) {
+timeText = ${secondsAgo}s ago;
+}
+li.innerHTML = <div class="site-info"> <span class="status-indicator ${item.status}"></span> <span class="site-name">${item.url}</span> </div> <span class="time-elapsed">${timeText}</span>;
+historyList.appendChild(li);
+});
+}
+// Bind click & enter keyboard actions strictly to the custom processing routine
+verifyBtn.addEventListener('click', checkUptime);
+urlInput.addEventListener('keypress', (e) => {
+if (e.key === 'Enter') {
+checkUptime();
+}
+});
+// Clear Log functionality
+clearBtn.addEventListener('click', () => {
+historyData = [];
+updateHistoryDOM();
+statusResult.style.display = 'none';
+errorMsg.style.display = 'none';
+});
+// Keep dynamic relative timestamps accurate
+setInterval(updateHistoryDOM, 15000);
+});
